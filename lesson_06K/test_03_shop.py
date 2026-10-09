@@ -15,34 +15,36 @@ PRODUCTS = [
 def test_shop_total():
     driver = webdriver.Firefox()
     wait = WebDriverWait(driver, 10)
+    try:
+        driver.get(URL)
 
-    driver.get(URL)
+        # Авторизация
+        wait.until(EC.visibility_of_element_located(
+            (By.ID, "user-name"))).send_keys("standard_user")
+        driver.find_element(By.ID, "password").send_keys("secret_sauce")
+        driver.find_element(By.ID, "login-button").click()
 
-    # Авторизация
-    wait.until(EC.visibility_of_element_located(
-        (By.ID, "user-name"))).send_keys("standard_user")
-    driver.find_element(By.ID, "password").send_keys("secret_sauce")
-    driver.find_element(By.ID, "login-button").click()
+        # Добавление товаров в корзину
+        for product_id in PRODUCTS:
+            wait.until(EC.element_to_be_clickable((By.ID, product_id))).click()
 
-    # Добавление товаров в корзину
-    for product_id in PRODUCTS:
-        wait.until(EC.element_to_be_clickable((By.ID, product_id))).click()
+        # Переход в корзину и оформление заказа
+        driver.find_element(By.CSS_SELECTOR, ".shopping_cart_link").click()
+        wait.until(EC.element_to_be_clickable((By.ID, "checkout"))).click()
 
-    # Переход в корзину и оформление заказа
-    driver.find_element(By.CSS_SELECTOR, ".shopping_cart_link").click()
-    wait.until(EC.element_to_be_clickable((By.ID, "checkout"))).click()
+        wait.until(EC.visibility_of_element_located(
+            (By.ID, "first-name"))).send_keys("Георгий")
+        driver.find_element(By.ID, "last-name").send_keys("Селиванов")
+        driver.find_element(By.ID, "postal-code").send_keys("354000")
+        driver.find_element(By.ID, "continue").click()
 
-    wait.until(EC.visibility_of_element_located(
-        (By.ID, "first-name"))).send_keys("Георгий")
-    driver.find_element(By.ID, "last-name").send_keys("Селиванов")
-    driver.find_element(By.ID, "postal-code").send_keys("354000")
-    driver.find_element(By.ID, "continue").click()
+        # Чтение итоговой стоимости
+        total_text = wait.until(EC.visibility_of_element_located(
+            (By.CSS_SELECTOR, ".summary_total_label"))).text
+        total = total_text.replace("Total:", "").strip()
+    finally:
+        # Закрытие браузера
+        driver.quit()
 
-    # Чтение итоговой стоимости
-    total_text = wait.until(EC.visibility_of_element_located(
-        (By.CSS_SELECTOR, ".summary_total_label"))).text
-    total = total_text.replace("Total:", "").strip()
-
-    driver.quit()
-
+    # Проверка итоговой суммы
     assert total == "$58.29"
